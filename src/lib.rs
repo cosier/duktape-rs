@@ -43,6 +43,7 @@ extern crate duktape_sys;
 pub use errors::{ErrorCode, DuktapeError, DuktapeResult};
 pub use types::Value;
 pub use context::{Context, Callback};
+pub use duktape_sys::*;
 
 mod errors;
 mod types;

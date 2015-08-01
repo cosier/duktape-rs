@@ -5,6 +5,7 @@ use cesu8::to_cesu8;
 use std::ffi::*;
 use errors::*;
 use context::Context;
+use duktape_sys::*;
 
 /// Translates Rust values into JavaScript values.
 pub struct Encoder {

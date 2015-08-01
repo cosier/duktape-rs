@@ -3,6 +3,7 @@ use rustc_serialize::Decodable;
 use std::ffi::*;
 use errors::*;
 use context::{Context, from_lstring};
+use duktape_sys::*;
 
 /// Translates JavaScript values into Rust values.
 #[allow(dead_code)] // WIP

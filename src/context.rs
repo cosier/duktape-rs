@@ -10,6 +10,7 @@ use std::ffi::*;
 use errors::*;
 use types::Value;
 use encoder::{Encoder, DuktapeEncodable};
+use duktape_sys::*;
 
 /// To avoid massive debugging frustration, wrap stack manipulation code in
 /// this macro.
