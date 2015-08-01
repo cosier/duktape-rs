@@ -1,12 +1,17 @@
 use std::error::Error;
 use std::fmt;
 use std::result::Result;
-use ffi::*;
+use std::ffi::*;
+
+extern crate core;
+use self::core::clone::Clone;
+
+use duktape_sys::*;
 
 /// These are the standard error codes, which make it easy to return
 /// pre-defined errors from duktape functions implemented in Rust.
 #[allow(missing_docs)]
-#[derive(Copy, Show, PartialEq, Eq)]
+#[derive(Copy, Debug, PartialEq, Eq)]
 #[repr(i32)]
 pub enum ErrorCode {
     Unimplemented = DUK_ERR_UNIMPLEMENTED_ERROR,
@@ -24,11 +29,14 @@ pub enum ErrorCode {
     Type          = DUK_ERR_TYPE_ERROR,
     Uri           = DUK_ERR_URI_ERROR
 }
+impl core::clone::Clone for ErrorCode {
+    fn clone(&self) -> ErrorCode { *self }
+}
 
 /// A duktape API error.  The is used as both the return type of duktape of
 /// functions, and also the return type of Rust functions called from
 /// duktape.
-#[derive(Show, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DuktapeError {
     /// The error code, if a specific one is available, or
     /// `ErrorCode::Error` if we have nothing better.
@@ -53,7 +61,7 @@ impl DuktapeError {
 }
 
 /// Re-exported within the crate, but not outside.
-pub fn err_code(err: &DuktapeError) -> ErrorCode { err.code }
+pub fn err_code(err: &DuktapeError) -> ErrorCode { err.code.clone() }
 pub fn err_message(err: &DuktapeError) -> &Option<String> { &err.message }
 
 impl Error for DuktapeError {

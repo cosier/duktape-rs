@@ -1,9 +1,9 @@
 use libc::types::os::arch::c95::c_double;
-use std::string::CowString;
+use std::borrow::Cow;
 
 /// A value that can be passed to and from JavaScript.  This does not
 /// include all the types that can be stored internally!
-#[derive(Show, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Value<'a> {
     /// An undefined JavaScript value.
     Undefined,
@@ -14,5 +14,5 @@ pub enum Value<'a> {
     /// A JavaScript numeric value.
     Number(c_double),
     /// A JavaScript string value.
-    String(CowString<'a>)
+    String(Cow<'a, str>)
 }

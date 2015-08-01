@@ -12,7 +12,6 @@ repository = "https://github.com/emk/duktape-rs"
 documentation = "http://www.rust-ci.org/emk/ducktape-rs/doc/ducktape/"
 
 [dependencies]
-cesu8 = "*"
 abort_on_panic = "*"
 rustc-serialize = "*"
 log = "*"
@@ -20,3 +19,6 @@ log = "*"
 [dependencies.duktape_sys]
 path = "duktape_sys"
 version = "*"
+
+[dependencies.cesu8]
+git = "https://github.com/cosier/cesu8-rs.git"

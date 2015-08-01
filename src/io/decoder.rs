@@ -1,8 +1,11 @@
 use std::iter::Iterator;
 use rustc_serialize::Decodable;
-use ffi::*;
-use errors::*;
-use context::{Context, from_lstring};
+use std::ffi::*;
+
+use errors::base::*;
+use contexts::context::Context;
+use contexts::from_lstring;
+use duktape_sys::*;
 
 /// Translates JavaScript values into Rust values.
 #[allow(dead_code)] // WIP
@@ -27,38 +30,11 @@ impl Decoder {
 pub trait DuktapeDecodable: Decodable {}
 impl<T: Decodable> DuktapeDecodable for T {}
 
-macro_rules! read_and_convert {
-    ($name:ident -> $ty:ident, $reader:ident -> $in_ty:ident) => {
-        fn $name(&mut self) -> DuktapeResult<$ty> {
-            self.$reader().map(|: v: $in_ty| v as $ty)
-        }
-    }
-}
-
-macro_rules! read_with {
-    ($name:ident -> $ty:ident, $tester:ident,
-     |$slf:ident, $idx:ident| $reader:block) => {
-        fn $name(&mut $slf) -> DuktapeResult<$ty> {
-            unsafe {
-                let $idx = -1;
-                if $tester($slf.ctx.as_mut_ptr(), $idx) != 0 {
-                    let result = $reader;
-                    duk_pop($slf.ctx.as_mut_ptr());
-                    result
-                } else {
-                    duk_pop($slf.ctx.as_mut_ptr());
-                    Err(DuktapeError::from_str("Expected number"))
-                }
-            }
-        }
-    }
-}
-
 #[allow(unused_variables)]
 impl ::rustc_serialize::Decoder for Decoder {
     type Error = DuktapeError;
 
-    fn read_nil(&mut self) -> DuktapeResult<()> 
+    fn read_nil(&mut self) -> DuktapeResult<()>
     {
         unimplemented!()
     }
@@ -98,7 +74,7 @@ impl ::rustc_serialize::Decoder for Decoder {
                 match iter.next() {
                     None => Ok(result),
                     Some(_) => {
-                        err(format!("Expected char, got \"{}\"", s).as_slice())
+                        err(format!("Expected char, got \"{}\"", s).as_str())
                     }
                 }
             }
@@ -132,7 +108,7 @@ impl ::rustc_serialize::Decoder for Decoder {
                                 a_idx: usize,
                                 f: F)
                                 -> DuktapeResult<T>
-        where F: FnOnce(&mut Decoder) -> DuktapeResult<T>        
+        where F: FnOnce(&mut Decoder) -> DuktapeResult<T>
     {
         unimplemented!()
     }
@@ -194,48 +170,48 @@ impl ::rustc_serialize::Decoder for Decoder {
     fn read_tuple_struct_arg<T,F>(&mut self,
                                 a_idx: usize,
                                 f: F)
-                                -> DuktapeResult<T> 
+                                -> DuktapeResult<T>
         where F: FnOnce(&mut Decoder) -> DuktapeResult<T>
     {
         unimplemented!()
     }
 
     // Specialized types:
-    fn read_option<T,F>(&mut self, f: F) -> DuktapeResult<T> 
+    fn read_option<T,F>(&mut self, f: F) -> DuktapeResult<T>
         where F: FnMut(&mut Decoder, bool) -> DuktapeResult<T>
     {
         unimplemented!()
     }
 
-    fn read_seq<T,F>(&mut self, f: F) -> DuktapeResult<T> 
+    fn read_seq<T,F>(&mut self, f: F) -> DuktapeResult<T>
         where F: FnOnce(&mut Decoder, usize) -> DuktapeResult<T>
     {
         unimplemented!()
     }
-    fn read_seq_elt<T,F>(&mut self, idx: usize, f: F) -> DuktapeResult<T> 
+    fn read_seq_elt<T,F>(&mut self, idx: usize, f: F) -> DuktapeResult<T>
         where F: FnOnce(&mut Decoder) -> DuktapeResult<T>
     {
         unimplemented!()
     }
 
-    fn read_map<T,F>(&mut self, f: F) -> DuktapeResult<T> 
+    fn read_map<T,F>(&mut self, f: F) -> DuktapeResult<T>
         where F: FnOnce(&mut Decoder, usize) -> DuktapeResult<T>
     {
         unimplemented!()
     }
-    fn read_map_elt_key<T,F>(&mut self, idx: usize, f: F) -> DuktapeResult<T> 
+    fn read_map_elt_key<T,F>(&mut self, idx: usize, f: F) -> DuktapeResult<T>
         where F: FnOnce(&mut Decoder) -> DuktapeResult<T>
     {
         unimplemented!()
     }
-    fn read_map_elt_val<T,F>(&mut self, idx: usize, f: F) -> DuktapeResult<T> 
+    fn read_map_elt_val<T,F>(&mut self, idx: usize, f: F) -> DuktapeResult<T>
         where F: FnOnce(&mut Decoder) -> DuktapeResult<T>
     {
         unimplemented!()
     }
 
     // Failure
-    fn error(&mut self, err: &str) -> DuktapeError 
+    fn error(&mut self, err: &str) -> DuktapeError
     {
         unimplemented!()
     }
@@ -245,7 +221,9 @@ impl ::rustc_serialize::Decoder for Decoder {
 fn test_decoder() {
     //use std::collections::HashMap;
     use std::fmt::Debug;
-    use encoder::{Encoder, DuktapeEncodable};
+    use io::encoder::Encoder;
+    use io::encoder::DuktapeEncodable;
+    use std::string::String;
 
     let mut ctx = Context::new().unwrap();
 
@@ -256,24 +234,25 @@ fn test_decoder() {
         value.duktape_encode(&mut encoder).unwrap();
         let mut decoder = unsafe { Decoder::new(ctx.as_mut_ptr()) };
         let decoded: DuktapeResult<T> = Decodable::decode(&mut decoder);
-        println!("decoding {:?} {:?}", value, decoded);
-        assert_eq!(value, &decoded.unwrap());
+
+        println!("value: {:?} \ndecoded: {:?}", value, decoded.unwrap());
+        assert_eq!(value, decoded.unwrap());
     }
 
     macro_rules! assert_decode {
-        ($val:expr) => { assert_decode(&mut ctx, &$val) }
+        ($val: expr) => { assert_decode(&mut ctx, &$val) }
     }
 
     // TODO: Refactor everything below into a combined Encode/Decode test
     // suite.
 
     // Simple types.
-    assert_decode!(1us);
+    // assert_decode!(1us);
     assert_decode!(1u64);
     assert_decode!(1u32);
     assert_decode!(1u16);
     assert_decode!(1u8);
-    assert_decode!(-1is);
+    // assert_decode!(-1is);
     assert_decode!(-1i64);
     assert_decode!(-1i32);
     assert_decode!(-1i16);
@@ -284,43 +263,43 @@ fn test_decoder() {
     assert_decode!(1.0f32);
     assert_decode!("string".to_string());
     // serialize::json::encode handles characters below U+10000 incorrectly.
-    //assert_decode!('c'); // https://github.com/rust-lang/rust/issues/19719
+    assert_decode!('c'); // https://github.com/rust-lang/rust/issues/19719
     assert_decode!('𓀀');
 
     //// Enums.
-    //#[derive(RustcEncodable, Decodable, PartialEq, Show)]
-    //enum ExEnum { Foo, Bar(f64), Baz{x: f64, y: f64} }
-    //assert_decode!(ExEnum::Foo);
-    //assert_decode!(ExEnum::Bar(1.0));
-    //assert_decode!(ExEnum::Baz{x: 1.0, y: 2.0});
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
+    enum ExEnum { Foo, Bar(f64), Baz{x: f64, y: f64} }
+    assert_decode!(ExEnum::Foo);
+    assert_decode!(ExEnum::Bar(1.0));
+    assert_decode!(ExEnum::Baz{x: 1.0, y: 2.0});
 
     //// Structs.
-    //#[derive(RustcEncodable, Decodable, PartialEq, Show)]
-    //struct ExStruct { x: f64, y: f64 }
-    //assert_decode!(ExStruct{x: 1.0, y: 2.0});
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
+    struct ExStruct { x: f64, y: f64 }
+    assert_decode!(ExStruct{x: 1.0, y: 2.0});
 
     //// Tuples.
-    //assert_decode!((1u, 2us));
+    assert_decode!(("hello", "rabbit"));
 
     //// Tuple structs.
-    //#[derive(RustcEncodable, Decodable, PartialEq, Show)]
-    //struct ExTupleStruct(f64);
-    //assert_decode!(ExTupleStruct(1.0));
+    #[derive(RustcEncodable, RustcDecodable, PartialEq, Debug)]
+    struct ExTupleStruct(f64);
+    assert_decode!(ExTupleStruct(1.0));
 
     //// Options.
-    //let none_f64: Option<f64> = None;
-    //assert_decode!(none_f64);
-    //assert_decode!(Some(1.0f64));
+    let none_f64: Option<f64> = None;
+    assert_decode!(none_f64);
+    assert_decode!(Some(1.0f64));
 
     //// Sequences.
-    //let seq = vec!(1.0f64);
-    //assert_decode!(seq);
+    let seq = vec!(1.0f64);
+    assert_decode!(seq);
 
     // Maps.
-    //let mut hash: HashMap<String,int> = HashMap::new();
-    //hash.insert("test".to_string(), 3);
-    //assert_decode!(&hash);    
-    //let mut hash2: HashMap<int,int> = HashMap::new();
-    //hash2.insert(7, 3);
-    //assert_decode!(hash2);    
+    let mut hash: HashMap<String,int> = HashMap::new();
+    hash.insert("test".to_string(), 3);
+    assert_decode!(&hash);
+    let mut hash2: HashMap<int,int> = HashMap::new();
+    hash2.insert(7, 3);
+    assert_decode!(hash2);
 }

@@ -30,22 +30,37 @@
 #![feature(collections)]
 #![feature(core)]
 #![feature(libc)]
+#![feature(convert)]
 
-#![warn(missing_docs)]
+#![allow(missing_docs)]
+#![allow(unused_features)]
+#![allow(unused_attributes)]
+#![allow(unused_imports)]
+#![allow(dead_code)]
 
 #[macro_use] extern crate log;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 extern crate libc;
 extern crate cesu8;
+
 #[macro_use] extern crate abort_on_panic;
-extern crate "duktape_sys" as ffi;
+extern crate duktape_sys;
 
-pub use errors::{ErrorCode, DuktapeError, DuktapeResult};
+// use errors::{ErrorCode, DuktapeError, DuktapeResult};
+// use types::Value;
+// use context::{Context, Callback};
+use duktape_sys::*;
+
+#[macro_use]
+mod macros;
+
+pub use contexts::callback::Callback;
+pub use contexts::context::Context;
 pub use types::Value;
-pub use context::{Context, Callback};
+pub use errors::base::DuktapeResult;
 
+mod contexts;
+mod io;
 mod errors;
 mod types;
-mod encoder;
-mod decoder;
-mod context;
+
