@@ -34,11 +34,11 @@
 #![warn(missing_docs)]
 
 #[macro_use] extern crate log;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 extern crate libc;
 extern crate cesu8;
 #[macro_use] extern crate abort_on_panic;
-extern crate "duktape_sys" as ffi;
+extern crate duktape_sys;
 
 pub use errors::{ErrorCode, DuktapeError, DuktapeResult};
 pub use types::Value;

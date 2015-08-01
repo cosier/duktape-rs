@@ -1,12 +1,12 @@
 use std::error::Error;
 use std::fmt;
 use std::result::Result;
-use ffi::*;
+use std::ffi::*;
 
 /// These are the standard error codes, which make it easy to return
 /// pre-defined errors from duktape functions implemented in Rust.
 #[allow(missing_docs)]
-#[derive(Copy, Show, PartialEq, Eq)]
+#[derive(Copy, Debug, PartialEq, Eq)]
 #[repr(i32)]
 pub enum ErrorCode {
     Unimplemented = DUK_ERR_UNIMPLEMENTED_ERROR,
@@ -28,7 +28,7 @@ pub enum ErrorCode {
 /// A duktape API error.  The is used as both the return type of duktape of
 /// functions, and also the return type of Rust functions called from
 /// duktape.
-#[derive(Show, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct DuktapeError {
     /// The error code, if a specific one is available, or
     /// `ErrorCode::Error` if we have nothing better.

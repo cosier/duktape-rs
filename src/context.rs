@@ -1,12 +1,12 @@
 use std::borrow::Cow;
-use std::ffi::CString;
+// use std::ffi::CString;
 use std::mem::transmute;
 use std::ops::Deref;
 use std::ptr::null_mut;
-use std::slice::from_raw_buf;
+use std::slice::from_raw_parts;
 use libc::c_void;
 use cesu8::{to_cesu8, from_cesu8};
-use ffi::*;
+use std::ffi::*;
 use errors::*;
 use types::Value;
 use encoder::{Encoder, DuktapeEncodable};
@@ -134,7 +134,7 @@ impl Context {
     pub unsafe fn push<T: DuktapeEncodable>(&mut self, object: &T) {
         let mut encoder = Encoder::new(self.ptr);
         object.duktape_encode(&mut encoder).unwrap();
-    }        
+    }
 
     /// Interpret the value on the top of the stack as either a return
     /// value or an error, depending on the value of `status`.
@@ -147,7 +147,7 @@ impl Context {
             let mut len: duk_size_t = 0;
             let str = duk_safe_to_lstring(self.ptr, -1, &mut len);
             let msg = try!(from_lstring(str, len));
-            Err(DuktapeError::from_str(&msg[]))
+            Err(DuktapeError::from_str(&msg))
         }
     }
 
@@ -287,7 +287,7 @@ unsafe extern "C" fn rust_duk_callback(ctx: *mut duk_context) -> duk_ret_t {
     // Call our function.
     let result =
         abort_on_panic!("unexpected panic in code called from JavaScript", {
-            f(&mut ctx, &args[])
+            f(&mut ctx, &args)
         });
 
     // Return our result.
@@ -380,7 +380,7 @@ mod test {
     use types::*;
     use super::*;
 
-    pub fn rust_add(_ctx: &mut Context, args: &[Value<'static>]) -> 
+    pub fn rust_add(_ctx: &mut Context, args: &[Value<'static>]) ->
         DuktapeResult<Value<'static>>
     {
         let mut sum = 0.0;
