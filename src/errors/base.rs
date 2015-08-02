@@ -3,6 +3,8 @@ use std::fmt;
 use std::result::Result;
 use std::ffi::*;
 
+use duktape_sys::*;
+
 /// These are the standard error codes, which make it easy to return
 /// pre-defined errors from duktape functions implemented in Rust.
 #[allow(missing_docs)]

@@ -1,8 +1,10 @@
 use std::iter::Iterator;
 use rustc_serialize::Decodable;
 use std::ffi::*;
-use errors::*;
-use context::{Context, from_lstring};
+
+use errors::base::*;
+use contexts::context::Context;
+use contexts::from_lstring;
 use duktape_sys::*;
 
 /// Translates JavaScript values into Rust values.
@@ -27,33 +29,6 @@ impl Decoder {
 /// A value which can be encoded and passed to JavaScript code.
 pub trait DuktapeDecodable: Decodable {}
 impl<T: Decodable> DuktapeDecodable for T {}
-
-macro_rules! read_and_convert {
-    ($name:ident -> $ty:ident, $reader:ident -> $in_ty:ident) => {
-        fn $name(&mut self) -> DuktapeResult<$ty> {
-            self.$reader().map(|(_, v)| v as $ty)
-        }
-    }
-}
-
-macro_rules! read_with {
-    ($name:ident -> $ty:ident, $tester:ident,
-     |$slf:ident, $idx:ident| $reader:block) => {
-        fn $name(&mut $slf) -> DuktapeResult<$ty> {
-            unsafe {
-                let $idx = -1;
-                if $tester($slf.ctx.as_mut_ptr(), $idx) != 0 {
-                    let result = $reader;
-                    duk_pop($slf.ctx.as_mut_ptr());
-                    result
-                } else {
-                    duk_pop($slf.ctx.as_mut_ptr());
-                    Err(DuktapeError::from_str("Expected number"))
-                }
-            }
-        }
-    }
-}
 
 #[allow(unused_variables)]
 impl ::rustc_serialize::Decoder for Decoder {
@@ -259,10 +234,6 @@ fn test_decoder() {
         let decoded: DuktapeResult<T> = Decodable::decode(&mut decoder);
         println!("decoding {:?} {:?}", value, decoded);
         assert_eq!(value, &decoded.unwrap());
-    }
-
-    macro_rules! assert_decode {
-        ($val:expr) => { assert_decode(&mut ctx, &$val) }
     }
 
     // TODO: Refactor everything below into a combined Encode/Decode test

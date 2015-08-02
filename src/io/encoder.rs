@@ -3,9 +3,10 @@ use std::ptr::null_mut;
 use rustc_serialize::Encodable;
 use cesu8::to_cesu8;
 use std::ffi::*;
-use errors::*;
-use context::Context;
+use errors::base::*;
+
 use duktape_sys::*;
+use contexts::context::Context;
 
 /// Translates Rust values into JavaScript values.
 pub struct Encoder {
@@ -259,16 +260,6 @@ function assert_json(expected, value) {
             Ok(Value::String(ref got)) =>
                 panic!("expected {:?}, got {:?}", expected, got),
             ref result => panic!("unexpected value: {:?}", result)
-        }
-    }
-
-    macro_rules! assert_encode {
-        ($val:expr) => {
-            {
-                let v = $val;
-                let expected = ::rustc_serialize::json::encode(&v).unwrap();
-                assert_json(&mut ctx, expected.as_slice(), &v);
-            }
         }
     }
 

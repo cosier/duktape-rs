@@ -1,49 +1,19 @@
 use std::borrow::Cow;
-// use std::ffi::CString;
+use std::ffi::CString;
 use std::mem::transmute;
 use std::ops::Deref;
 use std::ptr::null_mut;
 use std::slice::from_raw_parts;
 use libc::c_void;
 use cesu8::{to_cesu8, from_cesu8};
-use std::ffi::*;
-use errors::*;
 use types::Value;
-use encoder::{Encoder, DuktapeEncodable};
 use duktape_sys::*;
+use errors::base::*;
 
-/// To avoid massive debugging frustration, wrap stack manipulation code in
-/// this macro.
-macro_rules! assert_stack_height_unchanged {
-    ($ctx:ident, $body:block) => {
-        {
-            let initial_stack_height = duk_get_top($ctx.ptr);
-            let result = $body;
-            assert_eq!(initial_stack_height, duk_get_top($ctx.ptr));
-            result
-        }
-    }
-}
+use contexts::from_lstring;
+use Callback;
+use io::encoder::{Encoder, DuktapeEncodable};
 
-/// Convert a duktape-format string into a Rust `String`.
-pub unsafe fn from_lstring(data: *const i8, len: duk_size_t) ->
-    DuktapeResult<String>
-{
-    let ptr = data as *const u8;
-    let bytes = from_raw_buf(&ptr, len as usize);
-    match from_cesu8(bytes) {
-        Ok(str) => Ok(str.into_owned()),
-        Err(_) => Err(DuktapeError::from_str("can't convert string to UTF-8"))
-    }
-}
-
-/// A "internal" property key used for storing Rust function pointers, which
-/// can't be accessed from JavaScript without a lot of trickery.
-const RUST_FN_PROP: [i8; 5] = [-1, 'r' as i8, 'f' as i8, 'n' as i8, 0];
-
-/// A Rust callback which can be invoked from JavaScript.
-pub type Callback = fn (&mut Context, &[Value<'static>]) ->
-    DuktapeResult<Value<'static>>;
 
 /// A duktape interpreter context.  An individual context is not
 /// re-entrant: You may only access it from one thread at a time.
@@ -247,6 +217,10 @@ impl Drop for Context {
   }
 }
 
+/// A "internal" property key used for storing Rust function pointers, which
+/// can't be accessed from JavaScript without a lot of trickery.
+const RUST_FN_PROP: [i8; 5] = [-1, 'r' as i8, 'f' as i8, 'n' as i8, 0];
+
 /// Our generic callback function.
 unsafe extern "C" fn rust_duk_callback(ctx: *mut duk_context) -> duk_ret_t {
     // ERROR-HANDLING NOTE: Try to avoid any Rust panics or duktape unwinds
@@ -275,7 +249,7 @@ unsafe extern "C" fn rust_duk_callback(ctx: *mut duk_context) -> duk_ret_t {
     // Coerce our arguments to Rust values.
     let arg_count = duk_get_top(ctx.ptr) as usize;
     let mut args = Vec::with_capacity(arg_count);
-    for i in range(0, arg_count) {
+    for i in 0..arg_count {
         match ctx.get(i as duk_idx_t) {
             Ok(arg) => args.push(arg),
             // Can't convert argument to Rust.
@@ -374,63 +348,3 @@ fn test_call_function_by_name() {
                ctx.call("id", &[&"é"]));
 }
 
-#[cfg(test)]
-#[allow(missing_docs)]
-mod test {
-    use errors::*;
-    use types::*;
-    use super::*;
-
-    pub fn rust_add(_ctx: &mut Context, args: &[Value<'static>]) ->
-        DuktapeResult<Value<'static>>
-    {
-        let mut sum = 0.0;
-        for arg in args.iter() {
-            // TODO: Type checking.
-            if let &Value::Number(n) = arg {
-                sum += n;
-            }
-        }
-        Ok(Value::Number(sum))
-    }
-
-    macro_rules! rust_callback {
-        ($name:ident, $retval:expr) => {
-            pub fn $name(_ctx: &mut Context, _args: &[Value<'static>]) ->
-                DuktapeResult<Value<'static>>
-            {
-                $retval
-            }
-        }
-    }
-
-    rust_callback!{rust_return_undefined, Ok(Value::Undefined)}
-    rust_callback!{rust_return_simple_error,
-                   Err(DuktapeError::from_code(ErrorCode::Type))}
-    rust_callback!{rust_return_custom_error,
-                   Err(DuktapeError::from_str("custom error"))}
-}
-
-#[test]
-fn test_callbacks() {
-    let mut ctx = Context::new().unwrap();
-
-    // An ordinary function, with arguments and a useful return value.
-    ctx.register("add", test::rust_add, Some(2));
-    assert_eq!(Value::Number(5.0), ctx.eval("add(2.0, 3.0)").unwrap());
-
-    // A funtion which returns `undefined` (the same as having no return
-    // value).
-    ctx.register("ret_undefined", test::rust_return_undefined, Some(0));
-    assert_eq!(Value::Undefined, ctx.eval("ret_undefined()").unwrap());
-
-    // A function which returns a numeric error code (special-cased in
-    // duktape).
-    ctx.register("simple_error", test::rust_return_simple_error, Some(0));
-    assert!(ctx.eval("simple_error()").is_err());
-
-    // A function which returns a custom error with a string.
-    ctx.register("custom_error", test::rust_return_custom_error, Some(0));
-    let res = ctx.eval("custom_error()");
-    assert!(res.is_err());
-}
