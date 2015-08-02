@@ -306,13 +306,21 @@ unsafe extern "C" fn rust_duk_callback(ctx: *mut duk_context) -> duk_ret_t {
 #[test]
 fn test_eval() {
     let mut ctx = Context::new().unwrap();
+    assert_eq!(Value::Undefined, ctx.eval("undefined").unwrap());
+    assert_eq!(Value::Null, ctx.eval("null").unwrap());
+    assert_eq!(Value::Bool(true), ctx.eval("true").unwrap());
+    assert_eq!(Value::Bool(false), ctx.eval("false").unwrap());
+    assert_eq!(Value::Number(5.0), ctx.eval("2 + 3").unwrap());
+
+    let result = ctx.eval("'é'").unwrap();
+    let expected = Value::String(Cow::Borrowed("é"));
+    // result.woot();
+    // expected.woot();
+
+    println!("expected: {:?}",expected);
+    println!("result: {:?}", result);
     // FIXME: un comment out the tests
-    // assert_eq!(Value::Undefined, ctx.eval("undefined").unwrap());
-    // assert_eq!(Value::Null, ctx.eval("null").unwrap());
-    // assert_eq!(Value::Bool(true), ctx.eval("true").unwrap());
-    // assert_eq!(Value::Bool(false), ctx.eval("false").unwrap());
-    // assert_eq!(Value::Number(5.0), ctx.eval("2 + 3").unwrap());
-    // assert_eq!(Value::String(Cow::Borrowed("é")), ctx.eval("'é'").unwrap());
+    // assert_eq!(expected, result);
 }
 
 #[test]
