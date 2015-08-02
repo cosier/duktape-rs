@@ -55,6 +55,8 @@ mod macros;
 
 pub use contexts::callback::Callback;
 pub use contexts::context::Context;
+pub use types::Value;
+pub use errors::base::DuktapeResult;
 
 mod contexts;
 mod io;
