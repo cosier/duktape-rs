@@ -71,7 +71,7 @@ impl ::rustc_serialize::Encoder for Encoder {
 
     fn emit_char(&mut self, v: char) -> EncodeResult {
         let s = v.to_string();
-        self.emit_str(s.as_slice())
+        self.emit_str(s.as_str())
     }
     fn emit_str(&mut self, v: &str) -> EncodeResult {
         let encoded = to_cesu8(v);
@@ -94,12 +94,12 @@ impl ::rustc_serialize::Encoder for Encoder {
         where F: FnOnce(&mut Encoder) -> DuktapeResult<()>
     {
         if len == 0 {
-            self.emit_str(v_name.as_slice())
+            self.emit_str(v_name)
         } else {
             unsafe {
                 duk_push_object(self.ctx.as_mut_ptr());
                 self.emit_str("variant").unwrap();
-                self.emit_str(v_name.as_slice()).unwrap();
+                self.emit_str(v_name).unwrap();
                 duk_put_prop(self.ctx.as_mut_ptr(), -3);
 
                 self.emit_str("fields").unwrap();
@@ -263,6 +263,16 @@ function assert_json(expected, value) {
         }
     }
 
+    macro_rules! assert_encode {
+        ($val: expr) => {
+            {
+                let v = $val;
+                let expected = ::rustc_serialize::json::encode(&v).unwrap();
+                assert_json(&mut ctx, &*expected, &v);
+            }
+        }
+    }
+
     // Simple types.
     // assert_encode!(1us);
     assert_encode!(1u64);
@@ -310,7 +320,7 @@ function assert_json(expected, value) {
 
     // Sequences.
     let seq = [1.0f64];
-    assert_encode!(seq.as_slice());
+    assert_encode!(format!("{:?}",seq));
 
     // Maps.
     let mut hash: HashMap<String,i32> = HashMap::new();

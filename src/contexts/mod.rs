@@ -12,6 +12,8 @@ use errors::base::*;
 use types::Value;
 use duktape_sys::*;
 
+// use errors::base::ErrorCode as ErrorCode;
+
 pub mod context;
 pub mod callback;
 
@@ -22,8 +24,8 @@ use Callback;
 pub unsafe fn from_lstring(data: *const i8, len: duk_size_t) ->
     DuktapeResult<String>
 {
-    let ptr = data as *const u8;
-    let bytes = from_raw_parts(&ptr, len as usize);
+    let ptr = data as u8;
+    let bytes = from_raw_parts(&ptr, len as usize) ;
     match from_cesu8(bytes) {
         Ok(str) => Ok(str.into_owned()),
         Err(_) => Err(DuktapeError::from_str("can't convert string to UTF-8"))
@@ -34,11 +36,11 @@ pub unsafe fn from_lstring(data: *const i8, len: duk_size_t) ->
 #[cfg(test)]
 #[allow(missing_docs)]
 mod test {
-    use errors::*;
+    use errors::base::*;
     use types::*;
     use super::*;
 
-    pub fn rust_add(_ctx: &mut Context, args: &[Value<'static>]) ->
+    pub fn rust_add(_ctx: &mut context::Context, args: &[Value<'static>]) ->
         DuktapeResult<Value<'static>>
     {
         let mut sum = 0.0;
@@ -53,7 +55,7 @@ mod test {
 
     macro_rules! rust_callback {
         ($name:ident, $retval:expr) => {
-            pub fn $name(_ctx: &mut Context, _args: &[Value<'static>]) ->
+            pub fn $name(_ctx: &mut context::Context, _args: &[Value<'static>]) ->
                 DuktapeResult<Value<'static>>
             {
                 $retval
@@ -70,7 +72,7 @@ mod test {
 
 #[test]
 fn test_callbacks() {
-    let mut ctx = Context::new().unwrap();
+    let mut ctx = context::Context::new().unwrap();
 
     // An ordinary function, with arguments and a useful return value.
     ctx.register("add", test::rust_add, Some(2));

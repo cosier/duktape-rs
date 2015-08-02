@@ -3,6 +3,9 @@ use std::fmt;
 use std::result::Result;
 use std::ffi::*;
 
+extern crate core;
+use self::core::clone::Clone;
+
 use duktape_sys::*;
 
 /// These are the standard error codes, which make it easy to return
@@ -25,6 +28,9 @@ pub enum ErrorCode {
     Syntax        = DUK_ERR_SYNTAX_ERROR,
     Type          = DUK_ERR_TYPE_ERROR,
     Uri           = DUK_ERR_URI_ERROR
+}
+impl core::clone::Clone for ErrorCode {
+    fn clone(&self) -> ErrorCode { *self }
 }
 
 /// A duktape API error.  The is used as both the return type of duktape of
@@ -55,7 +61,7 @@ impl DuktapeError {
 }
 
 /// Re-exported within the crate, but not outside.
-pub fn err_code(err: &DuktapeError) -> ErrorCode { err.code }
+pub fn err_code(err: &DuktapeError) -> ErrorCode { err.code.clone() }
 pub fn err_message(err: &DuktapeError) -> &Option<String> { &err.message }
 
 impl Error for DuktapeError {

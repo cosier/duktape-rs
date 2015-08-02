@@ -4,9 +4,15 @@ use std::mem::transmute;
 use std::ops::Deref;
 use std::ptr::null_mut;
 use std::slice::from_raw_parts;
+use std::string::String;
+use std::ffi::CStr;
+use std::str;
+use libc;
 use libc::c_void;
 use cesu8::{to_cesu8, from_cesu8};
+
 use types::Value;
+
 use duktape_sys::*;
 use errors::base::*;
 
@@ -166,7 +172,7 @@ impl Context {
         unsafe {
             assert_stack_height_unchanged!(self, {
                 duk_push_global_object(self.ptr);
-                let c_str = CString::from_slice(fn_name.as_bytes());
+                let c_str = CString::new(fn_name).unwrap();
                 duk_get_prop_string(self.ptr, -1, c_str.as_ptr());
                 {
                     let mut encoder = Encoder::new(self.ptr);
@@ -201,7 +207,7 @@ impl Context {
                 duk_put_prop_string(self.ptr, -2, RUST_FN_PROP.as_ptr());
 
                 // Store our function in a global property.
-                let c_str = CString::from_slice(fn_name.as_bytes());
+                let c_str = CString::new(fn_name).unwrap();
                 duk_put_prop_string(self.ptr, -2, c_str.as_ptr());
                 duk_pop(self.ptr);
             })

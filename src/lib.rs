@@ -30,10 +30,11 @@
 #![feature(collections)]
 #![feature(core)]
 #![feature(libc)]
-#![feature(macro_rules)]
+#![feature(convert)]
 
 #![allow(missing_docs)]
 #![allow(unused_features)]
+#![allow(unused_attributes)]
 #![allow(unused_imports)]
 #![allow(dead_code)]
 

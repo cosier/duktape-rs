@@ -74,7 +74,7 @@ impl ::rustc_serialize::Decoder for Decoder {
                 match iter.next() {
                     None => Ok(result),
                     Some(_) => {
-                        err(format!("Expected char, got \"{}\"", s).as_slice())
+                        err(format!("Expected char, got \"{}\"", s).as_str())
                     }
                 }
             }
@@ -221,7 +221,8 @@ impl ::rustc_serialize::Decoder for Decoder {
 fn test_decoder() {
     //use std::collections::HashMap;
     use std::fmt::Debug;
-    use encoder::{Encoder, DuktapeEncodable};
+    use io::encoder::Encoder;
+    use io::encoder::DuktapeEncodable;
 
     let mut ctx = Context::new().unwrap();
 
@@ -234,6 +235,10 @@ fn test_decoder() {
         let decoded: DuktapeResult<T> = Decodable::decode(&mut decoder);
         println!("decoding {:?} {:?}", value, decoded);
         assert_eq!(value, &decoded.unwrap());
+    }
+
+    macro_rules! assert_decode {
+        ($val: expr) => { assert_decode(&mut ctx, &$val) }
     }
 
     // TODO: Refactor everything below into a combined Encode/Decode test
