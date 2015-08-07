@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/emk/duktape-rs.svg)](https://travis-ci.org/emk/duktape-rs)
+[![Build Status](https://travis-ci.org/cosier/duktape-rs.svg)](https://travis-ci.org/cosier/duktape-rs)
 
 [Documentation][apidoc].
 
-[apidoc]: http://www.rust-ci.org/emk/duktape-rs/doc/duktape/
+[apidoc]: http://www.rust-ci.org/cosier/duktape-rs/doc/duktape/
 
 WORK IN PROGRESS.
 
