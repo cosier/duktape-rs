@@ -224,6 +224,7 @@ fn test_decoder() {
     use io::encoder::Encoder;
     use io::encoder::DuktapeEncodable;
     use std::string::String;
+    use std::collections::hash_map::{self, HashMap};
 
     let mut ctx = Context::new().unwrap();
 
